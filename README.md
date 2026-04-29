@@ -7,7 +7,7 @@ Full-stack IT service management (ITSM) platform with AI-powered triage, skill-b
 | Layer | Tech |
 |-------|------|
 | Frontend | Next.js 16, React 19, Tailwind CSS 4, shadcn/ui, Recharts |
-| Backend | Go, Chi router, GORM, PostgreSQL, Redis, JWT |
+| Backend | Go, Chi router, GORM, PostgreSQL, JWT |
 | AI | Google Gemini (triage & suggestions) |
 
 ## Features
