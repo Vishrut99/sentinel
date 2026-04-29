@@ -1,0 +1,77 @@
+incident-ticketing/
+├── cmd/
+│   └── api/
+│       └── main.go                  # Entry point. Load .env → connect DB → register routes → start server.
+│
+├── internal/
+│   ├── config/
+│   │   └── config.go                # Reads env vars. Returns Config{DBUrl, JWTSecret, Port, Env}.
+│   │
+│   ├── db/
+│   │   ├── db.go                    # GORM open + connection pool. No AutoMigrate ever.
+│   │   └── migrations/
+│   │       ├── 001_init.sql         # Full schema (schema_v2.sql) — run once on fresh DB.
+│   │       ├── 002_migrate.sql      # v1→v2 changes — only if upgrading from v1.
+│   │       └── 003_migrate.sql      # v2→v3 changes — audit trigger removed, code column added.
+│   │
+│   ├── middleware/
+│   │   ├── auth.go                  # Reads Bearer token → verifies JWT → puts user_id+role in context.
+│   │   ├── cors.go                  # Adds CORS headers so browser/frontend can call the API.
+│   │   ├── logger.go                # Logs every request: method, path, status, duration.
+│   │   └── recover.go               # Catches any panic → returns 500 JSON instead of crashing.
+│   │
+│   ├── domain/                      # Pure Go structs. Zero logic. Zero DB. Zero HTTP. Just shapes.
+│   │   ├── user.go                  # User (GORM model) · RegisterReq · LoginReq · LoginRes
+│   │   ├── agent.go                 # Agent (GORM model) · RegisterAgentReq
+│   │   ├── ticket.go                # Ticket (GORM model) · CreateTicketReq · UpdateStatusReq · AssignReq
+│   │   ├── comment.go               # Comment (GORM model) · CreateCommentReq
+│   │   ├── audit.go                 # AuditLog (GORM model — read only, written by DB procedures)
+│   │   └── errors.go                # AppError · ErrNotFound · ErrForbidden · ErrBadRequest · ErrConflict
+│   │
+│   ├── repository/                  # Only layer that talks to DB. All GORM calls live here only.
+│   │   ├── user_repo.go             # Create · GetByEmail · GetByID
+│   │   ├── agent_repo.go            # GetByID · GetByUserID · ListAvailable
+│   │   ├── ticket_repo.go           # Create · GetByID · List(filters) · UpdateStatus · CallAssign · CallResolve
+│   │   ├── comment_repo.go          # Create · ListByTicketID
+│   │   └── audit_repo.go            # ListByTicketID — read only
+│   │
+│   ├── service/                     # Business logic. Calls repository. Never touches HTTP.
+│   │   ├── auth_service.go          # Register (hash pw → save) · Login (compare pw → sign JWT)
+│   │   ├── agent_service.go         # RegisterAgent (calls sp_register_agent) · ListAvailable
+│   │   ├── ticket_service.go        # CreateTicket · GetTicket · ListTickets
+│   │   │                            # ChangeStatus → PATCH /tickets/:id/status
+│   │   │                            # AssignTicket → calls sp_assign_ticket (PATCH /tickets/:id/assign)
+│   │   │                            # ResolveTicket → calls sp_resolve_ticket (via ChangeStatus to resolved)
+│   │   └── dashboard_service.go     # GetStats — open/resolved counts, SLA breach rate, avg resolve time
+│   │
+│   └── handler/                     # HTTP layer only. Decode → call service → encode JSON response.
+│       ├── auth_handler.go          # POST   /api/v1/auth/register
+│       │                            # POST   /api/v1/auth/login
+│       ├── agent_handler.go         # POST   /api/v1/agents
+│       │                            # GET    /api/v1/agents
+│       ├── ticket_handler.go        # POST   /api/v1/tickets
+│       │                            # GET    /api/v1/tickets
+│       │                            # GET    /api/v1/tickets/:id
+│       │                            # PATCH  /api/v1/tickets/:id/status  ← resolve also goes here (status=resolved)
+│       │                            # PATCH  /api/v1/tickets/:id/assign
+│       │                            # GET    /api/v1/tickets/:id/audit
+│       ├── comment_handler.go       # POST   /api/v1/tickets/:id/comments
+│       │                            # GET    /api/v1/tickets/:id/comments
+│       ├── dashboard_handler.go     # GET    /api/v1/dashboard
+│       └── response.go              # WriteJSON(w, status, data) · WriteError(w, status, code, msg)
+│
+├── pkg/
+│   ├── jwtutil/
+│   │   └── jwt.go                   # SignToken(userID, role) → string · VerifyToken(token) → *Claims
+│   └── validator/
+│       └── validate.go              # ValidateStruct(v any) → error  (wraps go-playground/validator)
+│
+├── .env                             # Real secrets — NEVER commit. Add to .gitignore.
+├── .env.example                     # Safe template with placeholder values — commit this.
+├── .gitignore                       # Contains: .env  /bin  *.exe  vendor/
+├── docker-compose.yml               # Local postgres for dev. Supabase used in production.
+├── Dockerfile                       # Multi-stage: golang:1.22-alpine → distroless/static
+├── go.mod                           # module github.com/yourusername/incident-ticketing
+├── go.sum
+├── Makefile                         # make run · make build · make test · make tidy
+└── README.md                        # Setup steps, env vars, how to run locally

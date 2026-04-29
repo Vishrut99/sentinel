@@ -1,0 +1,489 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --background: oklch(0.978 0.012 252.29);
+  --foreground: oklch(0.277 0.038 257.33);
+  --card: oklch(0.995 0.006 255.05);
+  --card-foreground: oklch(0.277 0.038 257.33);
+  --popover: oklch(0.995 0.006 255.05);
+  --popover-foreground: oklch(0.277 0.038 257.33);
+  --primary: oklch(0.534 0.164 257.12);
+  --primary-foreground: oklch(0.99 0.004 247.86);
+  --secondary: oklch(0.944 0.02 251.39);
+  --secondary-foreground: oklch(0.317 0.047 257.73);
+  --muted: oklch(0.958 0.014 251.47);
+  --muted-foreground: oklch(0.518 0.039 258.02);
+  --accent: oklch(0.919 0.036 243.95);
+  --accent-foreground: oklch(0.317 0.047 257.73);
+  --destructive: oklch(0.612 0.225 26.91);
+  --destructive-foreground: oklch(0.99 0.004 247.86);
+  --border: oklch(0.892 0.02 251.94);
+  --input: oklch(0.924 0.017 251.3);
+  --ring: oklch(0.649 0.149 252.42);
+  --chart-1: oklch(0.587 0.166 255.12);
+  --chart-2: oklch(0.696 0.156 173.94);
+  --chart-3: oklch(0.747 0.163 70.67);
+  --chart-4: oklch(0.678 0.164 33.9);
+  --chart-5: oklch(0.704 0.132 208.18);
+  --radius: 0.75rem;
+  /* Unified elevation tokens */
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 1px rgba(15, 23, 42, 0.03);
+  --shadow-md: 0 2px 8px -2px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.05);
+  --shadow-lg: 0 8px 24px -8px rgba(15, 23, 42, 0.10), 0 2px 6px rgba(15, 23, 42, 0.05);
+  /* Semantic status palette */
+  --status-success: oklch(0.62 0.17 150);
+  --status-success-bg: oklch(0.96 0.04 150);
+  --status-warning: oklch(0.68 0.17 75);
+  --status-warning-bg: oklch(0.97 0.05 85);
+  --status-danger: oklch(0.6 0.22 25);
+  --status-danger-bg: oklch(0.96 0.05 25);
+  --status-info: oklch(0.6 0.16 240);
+  --status-info-bg: oklch(0.96 0.04 240);
+  --status-neutral: oklch(0.5 0.02 250);
+  --status-neutral-bg: oklch(0.96 0.01 250);
+  --sidebar: oklch(0.258 0.046 258.04);
+  --sidebar-foreground: oklch(0.985 0.005 247.86);
+  --sidebar-primary: oklch(0.816 0.108 230.45);
+  --sidebar-primary-foreground: oklch(0.258 0.046 258.04);
+  --sidebar-accent: oklch(0.321 0.046 257.44);
+  --sidebar-accent-foreground: oklch(0.985 0.005 247.86);
+  --sidebar-border: oklch(0.362 0.043 257.83);
+  --sidebar-ring: oklch(0.76 0.109 230.79);
+}
+
+.dark {
+  --background: oklch(0.206 0.03 258.19);
+  --foreground: oklch(0.96 0.008 247.86);
+  --card: oklch(0.241 0.032 258.18);
+  --card-foreground: oklch(0.96 0.008 247.86);
+  --popover: oklch(0.241 0.032 258.18);
+  --popover-foreground: oklch(0.96 0.008 247.86);
+  --primary: oklch(0.77 0.111 229.96);
+  --primary-foreground: oklch(0.222 0.031 257.54);
+  --secondary: oklch(0.297 0.031 257.26);
+  --secondary-foreground: oklch(0.96 0.008 247.86);
+  --muted: oklch(0.286 0.026 257.12);
+  --muted-foreground: oklch(0.73 0.019 248.65);
+  --accent: oklch(0.335 0.044 255.84);
+  --accent-foreground: oklch(0.96 0.008 247.86);
+  --destructive: oklch(0.704 0.182 25.68);
+  --destructive-foreground: oklch(0.18 0.015 257.24);
+  --border: oklch(0.33 0.024 257.36);
+  --input: oklch(0.307 0.02 257.51);
+  --ring: oklch(0.67 0.121 229.33);
+  --chart-1: oklch(0.71 0.134 231.78);
+  --chart-2: oklch(0.76 0.136 171.21);
+  --chart-3: oklch(0.8 0.155 74.65);
+  --chart-4: oklch(0.77 0.153 31.84);
+  --chart-5: oklch(0.73 0.132 209.23);
+  --sidebar: oklch(0.214 0.028 258.13);
+  --sidebar-foreground: oklch(0.96 0.008 247.86);
+  --sidebar-primary: oklch(0.77 0.111 229.96);
+  --sidebar-primary-foreground: oklch(0.222 0.031 257.54);
+  --sidebar-accent: oklch(0.297 0.031 257.26);
+  --sidebar-accent-foreground: oklch(0.96 0.008 247.86);
+  --sidebar-border: oklch(0.33 0.024 257.36);
+  --sidebar-ring: oklch(0.67 0.121 229.33);
+}
+
+@theme inline {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply scroll-smooth;
+  }
+  body {
+    @apply bg-background text-foreground;
+    min-height: 100vh;
+    background-image:
+      radial-gradient(circle at top left, rgba(84, 109, 255, 0.06), transparent 28%),
+      radial-gradient(circle at top right, rgba(56, 189, 248, 0.04), transparent 20%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0));
+    background-attachment: fixed;
+  }
+  ::selection {
+    background: rgba(88, 99, 255, 0.18);
+  }
+  .font-display {
+    font-family: var(--font-space-grotesk), var(--font-geist-sans), sans-serif;
+  }
+}
+
+@layer utilities {
+  .sentinel-panel {
+    border: 1px solid oklch(0.92 0.012 250);
+    background: #fff;
+    box-shadow: var(--shadow-sm);
+    border-radius: var(--radius);
+  }
+
+  .sentinel-hero {
+    border: 1px solid oklch(0.92 0.012 250);
+    background:
+      radial-gradient(circle at top left, oklch(0.95 0.05 255 / 0.35), transparent 35%),
+      #fff;
+    box-shadow: var(--shadow-sm);
+    border-radius: var(--radius);
+  }
+
+  .sentinel-chip {
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    background: rgba(248, 250, 252, 0.90);
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+  }
+
+  .sentinel-grid {
+    background-image:
+      linear-gradient(to right, rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+
+  .sentinel-divider {
+    background: linear-gradient(90deg, rgba(148, 163, 184, 0), rgba(148, 163, 184, 0.28), rgba(148, 163, 184, 0));
+  }
+
+  /* Prevent layout overflow at any zoom level */
+  [data-sidebar="inset"] {
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  /* Smoother sidebar open/close motion */
+  [data-slot="sidebar-gap"],
+  [data-sidebar="sidebar"] {
+    transition-duration: 300ms !important;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+
+  /* ============================================================
+     Unified page primitives — use across ALL pages
+     ============================================================ */
+
+  /* Page shell: caps width, applies consistent side padding */
+  .page-shell {
+    width: 100%;
+    max-width: 1280px;
+    margin-inline: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem; /* 24px vertical rhythm between sections */
+  }
+
+  /* Page header: eyebrow + title + optional description + actions */
+  .page-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-bottom: 0.5rem;
+  }
+  .page-header__eyebrow {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+  .page-header__title {
+    font-family: var(--font-space-grotesk), var(--font-geist-sans), sans-serif;
+    font-size: 1.5rem; /* 24px */
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    color: var(--foreground);
+    margin-top: 0.25rem;
+  }
+  .page-header__description {
+    font-size: 0.875rem; /* 14px */
+    line-height: 1.5;
+    color: var(--muted-foreground);
+    margin-top: 0.375rem;
+    max-width: 60ch;
+  }
+
+  /* Section title (between page title and cards) */
+  .section-title {
+    font-family: var(--font-space-grotesk), var(--font-geist-sans), sans-serif;
+    font-size: 1rem; /* 16px */
+    font-weight: 600;
+    color: var(--foreground);
+    letter-spacing: -0.005em;
+  }
+  .section-subtitle {
+    font-size: 0.75rem; /* 12px */
+    color: var(--muted-foreground);
+    margin-top: 0.125rem;
+  }
+
+  /* Unified card surface — use .data-card EVERYWHERE for cards */
+  .data-card {
+    background: #fff;
+    border: 1px solid oklch(0.92 0.012 250);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    padding: 1rem; /* 16px */
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    transition: box-shadow 160ms ease, border-color 160ms ease;
+  }
+  .data-card--lg {
+    padding: 1.5rem; /* 24px */
+  }
+  .data-card--interactive:hover {
+    box-shadow: var(--shadow-md);
+    border-color: oklch(0.87 0.02 250);
+  }
+
+  /* Card header / body / footer for equal-height flex cards */
+  .data-card__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+  .data-card__title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--foreground);
+    letter-spacing: -0.005em;
+  }
+  .data-card__subtitle {
+    font-size: 0.75rem;
+    color: var(--muted-foreground);
+    margin-top: 0.125rem;
+  }
+  .data-card__body {
+    flex: 1;
+    min-height: 0;
+  }
+  .data-card__body--scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+  .data-card__footer {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid oklch(0.94 0.01 250);
+  }
+
+  /* Stat card — label above value layout */
+  .stat-card {
+    background: #fff;
+    border: 1px solid oklch(0.92 0.012 250);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    min-height: 92px;
+    transition: box-shadow 160ms ease, border-color 160ms ease;
+  }
+  .stat-card:hover {
+    box-shadow: var(--shadow-md);
+  }
+  .stat-card__label {
+    font-size: 0.75rem; /* 12px */
+    font-weight: 500;
+    color: var(--muted-foreground);
+    letter-spacing: 0.01em;
+  }
+  .stat-card__value {
+    font-family: var(--font-space-grotesk), var(--font-geist-sans), sans-serif;
+    font-size: 1.75rem; /* 28px */
+    font-weight: 600;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    color: var(--foreground);
+    margin-top: 0.375rem;
+  }
+  .stat-card__meta {
+    font-size: 0.75rem;
+    color: var(--muted-foreground);
+    margin-top: 0.375rem;
+    line-height: 1.4;
+  }
+
+  /* Equal-height rows — apply to any flex/grid row with side-by-side cards */
+  .row-equal {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 1rem;
+  }
+  .row-equal > * {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  /* Grid variant — equal height cells via grid auto-rows */
+  .grid-equal {
+    display: grid;
+    gap: 1rem;
+    align-items: stretch;
+  }
+  .grid-equal > * {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  /* Status badge palette — single source of truth */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    padding: 0.125rem 0.5rem;
+    font-size: 0.6875rem; /* 11px */
+    font-weight: 500;
+    line-height: 1.5;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+  }
+  .chip--neutral {
+    background: var(--status-neutral-bg);
+    color: var(--status-neutral);
+    border-color: oklch(0.9 0.01 250);
+  }
+  .chip--info {
+    background: var(--status-info-bg);
+    color: var(--status-info);
+    border-color: oklch(0.88 0.04 240);
+  }
+  .chip--success {
+    background: var(--status-success-bg);
+    color: var(--status-success);
+    border-color: oklch(0.88 0.06 150);
+  }
+  .chip--warning {
+    background: var(--status-warning-bg);
+    color: var(--status-warning);
+    border-color: oklch(0.88 0.08 85);
+  }
+  .chip--danger {
+    background: var(--status-danger-bg);
+    color: var(--status-danger);
+    border-color: oklch(0.88 0.06 25);
+  }
+
+  /* Table polish — use wrapper .data-table for consistent rows */
+  .data-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.8125rem; /* 13px */
+  }
+  .data-table thead th {
+    text-align: left;
+    font-size: 0.6875rem; /* 11px */
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted-foreground);
+    padding: 0.625rem 0.75rem;
+    background: oklch(0.975 0.008 250);
+    border-bottom: 1px solid oklch(0.92 0.012 250);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+  .data-table tbody td {
+    padding: 0.75rem;
+    border-bottom: 1px solid oklch(0.95 0.01 250);
+    color: var(--foreground);
+    vertical-align: middle;
+  }
+  .data-table tbody tr {
+    transition: background-color 140ms ease;
+  }
+  .data-table tbody tr:hover {
+    background: oklch(0.975 0.008 250);
+  }
+  .data-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  /* Filter bar: consistent input heights + gap */
+  .filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.625rem;
+    align-items: center;
+  }
+  .filter-bar > * {
+    min-width: 0;
+  }
+
+  /* Form row */
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+  }
+  .form-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--foreground);
+    letter-spacing: 0.005em;
+  }
+
+  /* Subtle divider between sections */
+  .hr-soft {
+    height: 1px;
+    background: oklch(0.93 0.01 250);
+    border: 0;
+    margin: 0.5rem 0;
+  }
+}

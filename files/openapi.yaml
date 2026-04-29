@@ -1,0 +1,738 @@
+openapi: "3.0.3"
+
+info:
+  title: AI Incident & Ticketing System API
+  description: |
+    REST API for the incident ticketing system built in Go with PostgreSQL (Supabase).
+    
+    **Auth:** All protected routes require `Authorization: Bearer <jwt_token>`.
+    Get a token via `POST /auth/login`.
+    
+    **Roles:** `admin` > `agent` > `user`. Each endpoint documents minimum required role.
+  version: "1.0.0"
+  contact:
+    name: Intern Build
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local development
+  - url: https://your-app.fly.dev/api/v1
+    description: Production (future)
+
+tags:
+  - name: Auth
+    description: Register and login
+  - name: Tickets
+    description: Core ticket lifecycle
+  - name: Comments
+    description: Ticket comments and internal notes
+  - name: Agents
+    description: Agent management and assignment
+  - name: Dashboard
+    description: Stats and reporting (admin/agent only)
+
+# ─────────────────────────────────────────────────────────────
+# SECURITY
+# ─────────────────────────────────────────────────────────────
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  # ── Reusable Schemas ──────────────────────────────────────
+  schemas:
+
+    # --- IDs & timestamps ---
+    UUID:
+      type: string
+      format: uuid
+      example: "550e8400-e29b-41d4-a716-446655440000"
+
+    Timestamp:
+      type: string
+      format: date-time
+      example: "2025-03-01T10:30:00Z"
+
+    # --- Enums ---
+    TicketStatus:
+      type: string
+      enum: [open, in_progress, resolved, closed, cancelled]
+
+    Priority:
+      type: string
+      enum: [low, medium, high, critical]
+
+    Role:
+      type: string
+      enum: [admin, agent, user]
+
+    # --- Error ---
+    Error:
+      type: object
+      required: [error, message]
+      properties:
+        error:
+          type: string
+          example: "NOT_FOUND"
+        message:
+          type: string
+          example: "Ticket not found"
+
+    # --- Auth ---
+    RegisterRequest:
+      type: object
+      required: [email, password, full_name]
+      properties:
+        email:
+          type: string
+          format: email
+          example: "jane@company.com"
+        password:
+          type: string
+          minLength: 8
+          example: "SecurePass123!"
+        full_name:
+          type: string
+          example: "Jane Smith"
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        user:
+          $ref: '#/components/schemas/UserSummary'
+
+    UserSummary:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        email:
+          type: string
+        full_name:
+          type: string
+        role:
+          $ref: '#/components/schemas/Role'
+
+    # --- Tickets ---
+    Ticket:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        ticket_number:
+          type: string
+          example: "TKT-000042"
+        title:
+          type: string
+          example: "VPN not connecting for remote users"
+        description:
+          type: string
+        status:
+          $ref: '#/components/schemas/TicketStatus'
+        priority:
+          $ref: '#/components/schemas/Priority'
+        category:
+          type: string
+          example: "Network"
+        created_by:
+          $ref: '#/components/schemas/UserSummary'
+        assigned_agent:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/AgentSummary'
+        sla_breached:
+          type: boolean
+        due_at:
+          $ref: '#/components/schemas/Timestamp'
+        resolved_at:
+          $ref: '#/components/schemas/Timestamp'
+          nullable: true
+        created_at:
+          $ref: '#/components/schemas/Timestamp'
+        updated_at:
+          $ref: '#/components/schemas/Timestamp'
+
+    CreateTicketRequest:
+      type: object
+      required: [title, priority, category_id]
+      properties:
+        title:
+          type: string
+          minLength: 5
+          maxLength: 255
+          example: "VPN not connecting for remote users"
+        description:
+          type: string
+          example: "Since this morning, 3 users cannot connect to VPN. Error: timeout."
+        priority:
+          $ref: '#/components/schemas/Priority'
+        category_id:
+          $ref: '#/components/schemas/UUID'
+
+    UpdateStatusRequest:
+      type: object
+      required: [status]
+      properties:
+        status:
+          $ref: '#/components/schemas/TicketStatus'
+
+    AssignTicketRequest:
+      type: object
+      required: [agent_id]
+      properties:
+        agent_id:
+          $ref: '#/components/schemas/UUID'
+
+    TicketListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Ticket'
+        total:
+          type: integer
+        page:
+          type: integer
+        per_page:
+          type: integer
+
+    # --- Comments ---
+    Comment:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        ticket_id:
+          $ref: '#/components/schemas/UUID'
+        author:
+          $ref: '#/components/schemas/UserSummary'
+        body:
+          type: string
+        is_internal:
+          type: boolean
+          description: "If true, only agents/admins can see this comment"
+        created_at:
+          $ref: '#/components/schemas/Timestamp'
+
+    CreateCommentRequest:
+      type: object
+      required: [body]
+      properties:
+        body:
+          type: string
+          minLength: 1
+          maxLength: 10000
+        is_internal:
+          type: boolean
+          default: false
+
+    # --- Agents ---
+    AgentSummary:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        full_name:
+          type: string
+        department:
+          type: string
+        is_available:
+          type: boolean
+
+    CreateAgentRequest:
+      type: object
+      required: [user_id, department]
+      properties:
+        user_id:
+          $ref: '#/components/schemas/UUID'
+        department:
+          type: string
+          example: "IT Support"
+        max_tickets:
+          type: integer
+          default: 10
+
+    # --- Dashboard ---
+    DashboardStats:
+      type: object
+      properties:
+        total_tickets:
+          type: integer
+        open_tickets:
+          type: integer
+        in_progress_tickets:
+          type: integer
+        resolved_today:
+          type: integer
+        sla_breached:
+          type: integer
+        avg_resolve_hours:
+          type: number
+          format: float
+        by_priority:
+          type: object
+          additionalProperties:
+            type: integer
+        by_category:
+          type: object
+          additionalProperties:
+            type: integer
+
+    AuditLog:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        action:
+          type: string
+          example: "status_changed"
+        actor:
+          $ref: '#/components/schemas/UserSummary'
+        old_value:
+          type: object
+        new_value:
+          type: object
+        created_at:
+          $ref: '#/components/schemas/Timestamp'
+
+  # ── Reusable Responses ─────────────────────────────────────
+  responses:
+    Unauthorized:
+      description: Missing or invalid JWT token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "UNAUTHORIZED"
+            message: "Invalid or expired token"
+
+    Forbidden:
+      description: Authenticated but insufficient role
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "FORBIDDEN"
+            message: "Requires agent or admin role"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    BadRequest:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  # ── Reusable Parameters ────────────────────────────────────
+  parameters:
+    TicketID:
+      name: id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/UUID'
+      description: Ticket UUID
+
+    PageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        default: 1
+
+    PerPageParam:
+      name: per_page
+      in: query
+      schema:
+        type: integer
+        default: 20
+        maximum: 100
+
+# ─────────────────────────────────────────────────────────────
+# PATHS
+# ─────────────────────────────────────────────────────────────
+paths:
+
+  # ══ AUTH ════════════════════════════════════════════════════
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new user
+      description: Creates user with role `user` by default. Admin must separately elevate role.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        "201":
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSummary'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "409":
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login and get JWT token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        "401":
+          description: Wrong email or password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ══ TICKETS ═════════════════════════════════════════════════
+  /tickets:
+    get:
+      tags: [Tickets]
+      summary: List tickets
+      description: |
+        - `user` role: only their own tickets
+        - `agent` role: tickets assigned to them + unassigned
+        - `admin` role: all tickets
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/TicketStatus'
+        - name: priority
+          in: query
+          schema:
+            $ref: '#/components/schemas/Priority'
+        - name: category_id
+          in: query
+          schema:
+            $ref: '#/components/schemas/UUID'
+        - name: sla_breached
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: List of tickets
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketListResponse'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [Tickets]
+      summary: Create a new ticket
+      description: Any authenticated user can create a ticket. Ticket number auto-generated.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTicketRequest'
+      responses:
+        "201":
+          description: Ticket created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+
+  /tickets/{id}:
+    get:
+      tags: [Tickets]
+      summary: Get ticket by ID
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TicketID'
+      responses:
+        "200":
+          description: Ticket details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /tickets/{id}/status:
+    patch:
+      tags: [Tickets]
+      summary: Update ticket status
+      description: |
+        - `user` can only cancel their own ticket
+        - `agent` can move to `in_progress`, `resolved`
+        - `admin` can set any status
+        
+        Setting to `resolved` or `closed` auto-sets `resolved_at` via DB trigger.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TicketID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateStatusRequest'
+      responses:
+        "200":
+          description: Status updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+
+  /tickets/{id}/assign:
+    patch:
+      tags: [Tickets]
+      summary: Assign ticket to an agent
+      description: Requires `agent` or `admin` role. Uses SELECT FOR UPDATE to prevent double-assignment.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TicketID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignTicketRequest'
+      responses:
+        "200":
+          description: Ticket assigned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /tickets/{id}/audit:
+    get:
+      tags: [Tickets]
+      summary: Get audit log for a ticket
+      description: Requires `agent` or `admin` role.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TicketID'
+      responses:
+        "200":
+          description: Audit log entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AuditLog'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+
+  # ══ COMMENTS ════════════════════════════════════════════════
+  /tickets/{id}/comments:
+    get:
+      tags: [Comments]
+      summary: List comments on a ticket
+      description: Internal comments hidden from `user` role.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TicketID'
+      responses:
+        "200":
+          description: List of comments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Comment'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [Comments]
+      summary: Add a comment to a ticket
+      description: Set `is_internal: true` for agent-only notes (requires agent/admin role).
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TicketID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCommentRequest'
+      responses:
+        "201":
+          description: Comment added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+
+  # ══ AGENTS ══════════════════════════════════════════════════
+  /agents:
+    get:
+      tags: [Agents]
+      summary: List all agents
+      description: Requires `admin` role.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: List of agents
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AgentSummary'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      tags: [Agents]
+      summary: Promote a user to agent
+      description: Requires `admin` role. Also assigns `agent` role to the user.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAgentRequest'
+      responses:
+        "201":
+          description: Agent created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentSummary'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+
+  # ══ DASHBOARD ═══════════════════════════════════════════════
+  /dashboard:
+    get:
+      tags: [Dashboard]
+      summary: Get system-wide ticket statistics
+      description: Requires `agent` or `admin` role.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Dashboard statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardStats'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+
+  /health:
+    get:
+      tags: [Auth]
+      summary: Health check
+      description: Returns 200 if API is up. No auth required.
+      responses:
+        "200":
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+                  version:
+                    type: string
+                    example: "1.0.0"

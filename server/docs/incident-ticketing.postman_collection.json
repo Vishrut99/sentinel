@@ -1,0 +1,670 @@
+{
+    "info": {
+        "name": "Incident Ticketing API",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+        "description": "End-to-end collection for auth, lookups, ticket lifecycle, agents, comments, audit, and dashboard. Bootstrap the first admin with {{bootstrapAdminSecret}} once per database, then use the API to promote additional admins if needed."
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:8080/api/v1"
+        },
+        {
+            "key": "reporterEmail",
+            "value": "reporter@example.com"
+        },
+        {
+            "key": "adminEmail",
+            "value": "admin@example.com"
+        },
+        {
+            "key": "adminCandidateEmail",
+            "value": "admin.candidate@example.com"
+        },
+        {
+            "key": "agentUserEmail",
+            "value": "agent.user@example.com"
+        },
+        {
+            "key": "bootstrapAdminSecret",
+            "value": "local-bootstrap-secret"
+        },
+        {
+            "key": "password",
+            "value": "Password123"
+        },
+        {
+            "key": "categoryId",
+            "value": "00000000-0000-0000-0000-000000000001"
+        },
+        {
+            "key": "reporterToken",
+            "value": ""
+        },
+        {
+            "key": "adminToken",
+            "value": ""
+        },
+        {
+            "key": "adminUserId",
+            "value": ""
+        },
+        {
+            "key": "adminCandidateUserId",
+            "value": ""
+        },
+        {
+            "key": "ticketId",
+            "value": ""
+        },
+        {
+            "key": "problemTicketId",
+            "value": ""
+        },
+        {
+            "key": "agentUserId",
+            "value": ""
+        },
+        {
+            "key": "agentId",
+            "value": ""
+        },
+        {
+            "key": "agentMaxTickets",
+            "value": "2"
+        }
+    ],
+    "item": [
+        {
+            "name": "Health",
+            "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/health"
+            }
+        },
+        {
+            "name": "Auth",
+            "item": [
+                {
+                    "name": "Register Reporter",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"{{reporterEmail}}\",\n  \"password\": \"{{password}}\",\n  \"full_name\": \"Reporter User\"\n}"
+                        },
+                        "url": "{{baseUrl}}/auth/register"
+                    }
+                },
+                {
+                    "name": "Login Reporter",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "if (json.token) pm.collectionVariables.set('reporterToken', json.token);"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"{{reporterEmail}}\",\n  \"password\": \"{{password}}\"\n}"
+                        },
+                        "url": "{{baseUrl}}/auth/login"
+                    }
+                },
+                {
+                    "name": "Bootstrap First Admin",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "if (json.token) pm.collectionVariables.set('adminToken', json.token);",
+                                    "if (json.user && json.user.id) pm.collectionVariables.set('adminUserId', json.user.id);",
+                                    "pm.test('Bootstrap returns admin role', function () {",
+                                    "  pm.expect(json.user && json.user.role).to.eql('admin');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{password}}\",\n  \"full_name\": \"Admin User\",\n  \"bootstrap_secret\": \"{{bootstrapAdminSecret}}\"\n}"
+                        },
+                        "url": "{{baseUrl}}/auth/bootstrap-admin"
+                    }
+                },
+                {
+                    "name": "Login Admin",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "if (json.token && json.user && json.user.role === 'admin') {",
+                                    "  pm.collectionVariables.set('adminToken', json.token);",
+                                    "} else {",
+                                    "  pm.collectionVariables.unset('adminToken');",
+                                    "}",
+                                    "pm.test('Admin login has admin role', function () {",
+                                    "  pm.expect(json.user && json.user.role).to.eql('admin');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{password}}\"\n}"
+                        },
+                        "url": "{{baseUrl}}/auth/login"
+                    }
+                },
+                {
+                    "name": "Register Admin User Candidate",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "if (json.id) pm.collectionVariables.set('adminCandidateUserId', json.id);"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"{{adminCandidateEmail}}\",\n  \"password\": \"{{password}}\",\n  \"full_name\": \"Admin Candidate\"\n}"
+                        },
+                        "url": "{{baseUrl}}/auth/register"
+                    }
+                },
+                {
+                    "name": "Promote Admin Candidate",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "pm.test('Promotion returns admin role', function () {",
+                                    "  pm.expect(json.user && json.user.role).to.eql('admin');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/users/{{adminCandidateUserId}}/promote-admin"
+                    }
+                },
+                {
+                    "name": "Register Agent User",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "if (json.id) pm.collectionVariables.set('agentUserId', json.id);"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"{{agentUserEmail}}\",\n  \"password\": \"{{password}}\",\n  \"full_name\": \"Agent User\"\n}"
+                        },
+                        "url": "{{baseUrl}}/auth/register"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Lookups",
+            "item": [
+                {
+                    "name": "List Categories",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "if (json.data && json.data.length > 0 && json.data[0].id) pm.collectionVariables.set('categoryId', json.data[0].id);"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{reporterToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/lookups/categories"
+                    }
+                },
+                {
+                    "name": "List Priorities",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{reporterToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/lookups/priorities"
+                    }
+                },
+                {
+                    "name": "List Statuses",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{reporterToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/lookups/statuses"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Tickets",
+            "item": [
+                {
+                    "name": "Create Incident",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "if (json.id) pm.collectionVariables.set('ticketId', json.id);"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{reporterToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"title\": \"VPN timeout issue\",\n  \"description\": \"User cannot connect to VPN\",\n  \"priority\": \"high\",\n  \"category_id\": \"{{categoryId}}\"\n}"
+                        },
+                        "url": "{{baseUrl}}/tickets/"
+                    }
+                },
+                {
+                    "name": "Create Problem Ticket",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "if (json.id) pm.collectionVariables.set('problemTicketId', json.id);"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"title\": \"Root Cause: VPN gateway saturation\",\n  \"description\": \"Problem ticket for recurring VPN incidents\",\n  \"priority\": \"critical\",\n  \"category_id\": \"{{categoryId}}\",\n  \"is_problem\": true\n}"
+                        },
+                        "url": "{{baseUrl}}/tickets/"
+                    }
+                },
+                {
+                    "name": "Link Incident to Problem",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"parent_id\": \"{{problemTicketId}}\"\n}"
+                        },
+                        "url": "{{baseUrl}}/tickets/{{ticketId}}/link-problem"
+                    }
+                },
+                {
+                    "name": "List Tickets",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{reporterToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/tickets/?page=1&per_page=20"
+                    }
+                },
+                {
+                    "name": "Get Ticket By ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{reporterToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/tickets/{{ticketId}}"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Agents",
+            "item": [
+                {
+                    "name": "Register Agent (admin)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const json = pm.response.json();",
+                                    "if (json.id) pm.collectionVariables.set('agentId', json.id);"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"user_id\": \"{{agentUserId}}\",\n  \"department\": \"IT\",\n  \"max_tickets\": {{agentMaxTickets}}\n}"
+                        },
+                        "url": "{{baseUrl}}/agents/register"
+                    }
+                },
+                {
+                    "name": "Update Agent Capacity (admin)",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"is_available\": false,\n  \"max_tickets\": 4\n}"
+                        },
+                        "url": "{{baseUrl}}/agents/{{agentId}}/capacity"
+                    }
+                },
+                {
+                    "name": "List Agents",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/agents/"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Ticket Actions",
+            "item": [
+                {
+                    "name": "Assign Ticket",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"agent_id\": \"{{agentId}}\"\n}"
+                        },
+                        "url": "{{baseUrl}}/tickets/{{ticketId}}/assign"
+                    }
+                },
+                {
+                    "name": "Resolve Ticket",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"status\": \"resolved\"\n}"
+                        },
+                        "url": "{{baseUrl}}/tickets/{{ticketId}}/status"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Comments & Audit",
+            "item": [
+                {
+                    "name": "Add Comment",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{reporterToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"body\": \"Issue still occurs intermittently\",\n  \"is_internal\": false\n}"
+                        },
+                        "url": "{{baseUrl}}/tickets/{{ticketId}}/comments/"
+                    }
+                },
+                {
+                    "name": "Add Internal Comment (admin)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"body\": \"Internal investigation note\",\n  \"is_internal\": true\n}"
+                        },
+                        "url": "{{baseUrl}}/tickets/{{ticketId}}/comments/"
+                    }
+                },
+                {
+                    "name": "List Comments",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{reporterToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/tickets/{{ticketId}}/comments/"
+                    }
+                },
+                {
+                    "name": "Ticket Audit",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{reporterToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/tickets/{{ticketId}}/audit"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Dashboard",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{adminToken}}"
+                    }
+                ],
+                "url": "{{baseUrl}}/dashboard"
+            }
+        }
+    ]
+}

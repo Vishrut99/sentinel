@@ -1,0 +1,673 @@
+openapi: 3.0.3
+info:
+  title: Incident Ticketing API
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080/api/v1
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+    RegisterReq:
+      type: object
+      required: [email, password, full_name]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+        full_name:
+          type: string
+    LoginReq:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+    BootstrapAdminReq:
+      type: object
+      required: [email, password, full_name, bootstrap_secret]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+        full_name:
+          type: string
+        bootstrap_secret:
+          type: string
+    UserSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        full_name:
+          type: string
+        role:
+          type: string
+    LoginRes:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/UserSummary"
+    CreateTicketReq:
+      type: object
+      required: [title, priority, category_id]
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        priority:
+          type: string
+          enum: [low, medium, high, critical]
+        category_id:
+          type: string
+          format: uuid
+        is_problem:
+          type: boolean
+        parent_id:
+          type: string
+          format: uuid
+    AssignReq:
+      type: object
+      required: [agent_id]
+      properties:
+        agent_id:
+          type: string
+          format: uuid
+    UpdateStatusReq:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [open, in_progress, resolved, closed, cancelled]
+    LinkProblemReq:
+      type: object
+      required: [parent_id]
+      properties:
+        parent_id:
+          type: string
+          format: uuid
+    RegisterAgentReq:
+      type: object
+      required: [user_id, department]
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        department:
+          type: string
+        max_tickets:
+          type: integer
+          minimum: 1
+          maximum: 100
+    UpdateAgentCapacityReq:
+      type: object
+      properties:
+        is_available:
+          type: boolean
+        max_tickets:
+          type: integer
+          minimum: 1
+          maximum: 100
+    AgentSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        full_name:
+          type: string
+        department:
+          type: string
+        is_available:
+          type: boolean
+        max_tickets:
+          type: integer
+    TicketRes:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        ticket_number:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        ai_insights:
+          type: object
+          additionalProperties: true
+        status:
+          type: string
+        priority:
+          type: string
+        category_id:
+          type: string
+          format: uuid
+        category:
+          type: string
+        created_by:
+          $ref: "#/components/schemas/UserSummary"
+        assigned_agent:
+          $ref: "#/components/schemas/AgentSummary"
+        is_problem:
+          type: boolean
+        parent_id:
+          type: string
+          format: uuid
+        sla_breached:
+          type: boolean
+        due_at:
+          type: string
+          format: date-time
+        resolved_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    TicketListRes:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/TicketRes"
+        total:
+          type: integer
+        page:
+          type: integer
+        per_page:
+          type: integer
+    PromoteAdminRes:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/UserSummary"
+        message:
+          type: string
+    CategoryLookup:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+    PriorityLookup:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        sla_response_hrs:
+          type: integer
+        sla_resolve_hrs:
+          type: integer
+    StatusLookup:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        code:
+          type: string
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        "200":
+          description: OK
+
+  /auth/register:
+    post:
+      summary: Register user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterReq"
+      responses:
+        "201":
+          description: User registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserSummary"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /auth/bootstrap-admin:
+    post:
+      summary: Bootstrap the first admin user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BootstrapAdminReq"
+      responses:
+        "201":
+          description: Admin bootstrapped
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginRes"
+        "403":
+          description: Bootstrap disabled or invalid secret
+        "409":
+          description: Admin already exists
+
+  /auth/login:
+    post:
+      summary: Login user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginReq"
+      responses:
+        "200":
+          description: Auth token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginRes"
+        "401":
+          description: Unauthorized
+
+  /tickets/:
+    post:
+      summary: Create ticket
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTicketReq"
+      responses:
+        "201":
+          description: Ticket created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TicketRes"
+    get:
+      summary: List tickets
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string }
+        - in: query
+          name: priority
+          schema: { type: string }
+        - in: query
+          name: category_id
+          schema: { type: string, format: uuid }
+        - in: query
+          name: sla_breached
+          schema: { type: boolean }
+        - in: query
+          name: page
+          schema: { type: integer }
+        - in: query
+          name: per_page
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Ticket list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TicketListRes"
+
+  /tickets/{id}:
+    get:
+      summary: Get ticket by id
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Ticket
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TicketRes"
+    patch:
+      summary: Update ticket details (agent/admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTicketReq"
+      responses:
+        "200":
+          description: Updated ticket
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TicketRes"
+        "400":
+          description: Bad request
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+
+  /lookups/categories:
+    get:
+      summary: List categories
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Category list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/CategoryLookup"
+
+  /lookups/priorities:
+    get:
+      summary: List priorities
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Priority list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PriorityLookup"
+
+  /lookups/statuses:
+    get:
+      summary: List ticket statuses
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Status list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/StatusLookup"
+
+  /tickets/{id}/assign:
+    patch:
+      summary: Assign ticket
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssignReq"
+      responses:
+        "200":
+          description: Assigned
+
+  /tickets/{id}/status:
+    patch:
+      summary: Update ticket status
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateStatusReq"
+      responses:
+        "200":
+          description: Updated
+
+  /tickets/{id}/link-problem:
+    patch:
+      summary: Link incident ticket to a parent problem ticket
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LinkProblemReq"
+      responses:
+        "200":
+          description: Linked
+
+  /tickets/{id}/comments/:
+    post:
+      summary: Add comment
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "201":
+          description: Comment created
+    get:
+      summary: List comments
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Comment list
+
+  /tickets/{id}/audit:
+    get:
+      summary: Get ticket audit logs
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Audit logs
+
+  /agents/:
+    get:
+      summary: List agents
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Agent list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AgentSummary"
+
+  /agents/register:
+    post:
+      summary: Register agent (admin only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterAgentReq"
+      responses:
+        "201":
+          description: Agent registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentSummary"
+
+  /agents/{id}/capacity:
+    patch:
+      summary: Update agent capacity (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAgentCapacityReq"
+      responses:
+        "200":
+          description: Agent updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentSummary"
+
+  /users/{id}/promote-admin:
+    patch:
+      summary: Promote a user to admin (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: User promoted to admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PromoteAdminRes"
+
+  /dashboard:
+    get:
+      summary: Dashboard statistics (agent/admin)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Dashboard stats
