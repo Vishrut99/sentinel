@@ -40,7 +40,7 @@ git clone <repository-url>
 cd sentinel
 
 # Start everything (PostgreSQL + API + Database migrations)
-docker-compose up --build
+docker compose up --build
 ```
 
 ✅ **Done!** Your system is ready:
@@ -84,7 +84,7 @@ cp client/.env.example client/.env.local
 
 #### Step 2: Start Everything
 ```bash
-docker-compose up --build
+docker compose up --build
 ```
 
 **What happens automatically:**
@@ -280,13 +280,13 @@ audit_logs    → Full change history
 ### Docker Logs
 ```bash
 # All containers
-docker-compose logs -f
+docker compose logs -f
 
 # Just API
-docker-compose logs -f api
+docker compose logs -f api
 
 # Just PostgreSQL
-docker-compose logs -f postgres
+docker compose logs -f postgres
 ```
 
 ### Local Backend Logs
@@ -321,16 +321,7 @@ NEXT_PUBLIC_API_BASE_URL=https://your-api.com/api/v1
 ### Backend + DB → Docker Cloud/VPS
 
 ```bash
-# 1. Build image
-docker build -t sentinel-api:latest ./server
-
-# 2. Push to registry
-docker tag sentinel-api:latest your-registry/sentinel-api:latest
-docker push your-registry/sentinel-api:latest
-
-# 3. Deploy with docker-compose on VPS
-# Copy docker-compose.yml to VPS and run:
-docker-compose -f docker-compose.prod.yml up -d
+docker compose up -d --build
 ```
 
 ---
@@ -339,8 +330,8 @@ docker-compose -f docker-compose.prod.yml up -d
 
 ### Reset Database (Docker)
 ```bash
-docker-compose down -v  # Remove all data
-docker-compose up --build  # Fresh start
+docker compose down -v  # Remove all data
+docker compose up --build  # Fresh start
 ```
 
 ### Hot Reload Frontend
@@ -356,7 +347,7 @@ air  # Restarts on file changes
 
 ### View Postgres Data
 ```bash
-docker-compose exec postgres psql -U postgres -d sentinel
+docker compose exec postgres psql -U postgres -d sentinel
 ```
 
 Inside psql:
@@ -385,16 +376,16 @@ SELECT * FROM tickets; -- View tickets
 
 ```bash
 # Start everything
-docker-compose up --build
+docker compose up --build
 
 # View logs
-docker-compose logs -f
+docker compose logs -f
 
 # Stop everything (keep data)
-docker-compose stop
+docker compose stop
 
 # Completely reset (removes all data)
-docker-compose down -v
+docker compose down -v
 
 # Start frontend dev server
 cd client && npm run dev
