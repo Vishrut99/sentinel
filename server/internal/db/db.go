@@ -25,11 +25,16 @@ func Connect(dsn string) (*gorm.DB, error) {
 	timeout := connectTimeout()
 	dsnWithTimeout, target := prepareDSN(dsn, timeout)
 
+	logLevel := logger.Warn
+	if strings.EqualFold(os.Getenv("ENV"), "production") {
+		logLevel = logger.Error
+	}
+
 	database, err := gorm.Open(postgres.New(postgres.Config{
 		DSN:                  dsnWithTimeout,
 		PreferSimpleProtocol: true,
 	}), &gorm.Config{
-		Logger:                                   logger.Default.LogMode(logger.Info),
+		Logger:                                   logger.Default.LogMode(logLevel),
 		DisableForeignKeyConstraintWhenMigrating: true,
 		DisableAutomaticPing:                     true,
 	})

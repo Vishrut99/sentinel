@@ -166,7 +166,7 @@ export default function ProtectedLayout({ children }) {
         <AppSidebar />
         <SidebarInset className="min-w-0 overflow-x-hidden bg-transparent">
           <header className="sticky top-0 z-20 overflow-x-hidden px-4 py-3 backdrop-blur-xl sm:px-6 lg:px-8">
-            <div className="mx-auto w-full max-w-[1280px] rounded-xl border border-slate-200 bg-white/95 p-3 shadow-sm">
+            <div className="mx-auto w-full max-w-7xl rounded-xl border border-slate-200 bg-white/95 p-3 shadow-sm">
               <div className="flex min-w-0 flex-col gap-3 2xl:flex-row 2xl:items-start 2xl:justify-between">
                 <div className="flex min-w-0 flex-1 items-center gap-3">
                   <SidebarTrigger className="-ml-1 shrink-0 rounded-xl border border-slate-200/80 bg-white text-foreground shadow-sm hover:bg-slate-50" />
@@ -233,7 +233,7 @@ export default function ProtectedLayout({ children }) {
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         {profileLinks.map((item) => (
-                          <DropdownMenuItem key={item.href} asChild className="rounded-2xl px-3 py-2">
+                          <DropdownMenuItem key={`${item.href}-${item.label}`} asChild className="rounded-2xl px-3 py-2">
                             <Link href={item.href}>
                               <item.icon className="h-4 w-4" />
                               {item.label}
@@ -270,7 +270,7 @@ export default function ProtectedLayout({ children }) {
             </div>
           </header>
           <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
-            <div className="mx-auto w-full max-w-[1280px]">
+            <div className="mx-auto w-full max-w-7xl">
               {children}
             </div>
           </main>

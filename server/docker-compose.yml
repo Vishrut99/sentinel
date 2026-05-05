@@ -1,8 +1,36 @@
+version: "3.9"
+
 services:
-  redis:
-    image: redis:7-alpine
-    container_name: incident-ticketing-redis
+  db:
+    image: postgres:16
+    container_name: sentinel-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: sentinel
     ports:
-      - "6379:6379"
-    command: ["redis-server", "--appendonly", "yes"]
-    restart: unless-stopped
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build: ./server
+    container_name: sentinel-backend
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@db:5432/sentinel?sslmode=disable
+      JWT_SECRET: supersecretkey
+      PORT: 8080
+      ENV: development
+      DB_CONNECT_TIMEOUT_SEC: 5
+      REDIS_URL: disabled
+      AI_TRIAGE_URL: ""
+      AI_TRIAGE_API_KEY: ""
+      BOOTSTRAP_ADMIN_SECRET: local-bootstrap-secret
+    ports:
+      - "8080:8080"
+
+volumes:
+  postgres_data:

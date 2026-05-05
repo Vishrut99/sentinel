@@ -33,6 +33,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to connect database: %v", err)
 	}
+	log.Printf("database connected")
+
+	if err := db.RunMigrations(database, "internal/db/migrations"); err != nil {
+		log.Fatalf("failed to run migrations: %v", err)
+	}
+	log.Printf("migrations applied")
 
 	sqlDB, err := database.DB()
 	if err != nil {

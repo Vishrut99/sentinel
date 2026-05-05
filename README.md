@@ -1,8 +1,18 @@
 # Sentinel — Incident Ticketing System
 
-Full-stack IT service management (ITSM) platform with AI-powered triage, skill-based agent assignment, SLA enforcement, and problem management.
+Sentinel is a full-stack IT service management (ITSM) platform for handling incident tickets with AI-assisted triage, automated assignment, and SLA enforcement.
 
-## Stack
+## Features
+
+- **AI triage** — auto-suggests priority, category, and required skills
+- **Auto-assignment** — skill-based routing with workload balancing
+- **SLA tracking** — response/resolve timers and breach detection
+- **Problem management** — link incidents to a root-cause problem ticket
+- **Role-based access** — requester, agent, and admin workflows
+- **Audit trail** — every state change logged
+- **Dashboards** — operational metrics and live queues
+
+## Tech Stack
 
 | Layer | Tech |
 |-------|------|
@@ -10,55 +20,116 @@ Full-stack IT service management (ITSM) platform with AI-powered triage, skill-b
 | Backend | Go, Chi router, GORM, PostgreSQL, JWT |
 | AI | Google Gemini (triage & suggestions) |
 
-## Features
+## Quick Start (Recommended)
 
-- **AI Triage** — Gemini analyzes new tickets, suggests priority/category/skills
-- **Auto-assignment** — skill-based agent matching with workload balancing
-- **SLA tracking** — automatic breach detection and marking
-- **Problem management** — link related incidents to a root-cause problem ticket
-- **Role-based access** — requester / agent / admin roles
-- **Audit trail** — every state change logged
-- **Dashboards** — real-time stats and charts
+Run the full backend + database with one command:
 
-## Project Structure
-
-```
-.
-├── client/       # Next.js frontend
-└── server/       # Go REST API
+```bash
+docker-compose up --build
 ```
 
-## Quick Start
+API will be available at:
+`http://localhost:8080/api/v1`
 
-### Backend
+## System Flow
+
+Client (Next.js)
+	↓
+Backend API (Go + Chi)
+	↓
+PostgreSQL (Docker volume)
+
+## Architecture
+
+- **Frontend**: `client/` — Next.js app for agent/admin/requester workflows
+- **Backend**: `server/` — Go REST API (Chi + GORM)
+- **Database**: PostgreSQL — schema migrations in `server/internal/db/migrations/`
+
+## Deployment
+
+- Frontend: Vercel (recommended)
+- Backend + DB: Docker 
+
+This project is fully containerized and can be deployed using docker-compose on any cloud VM.
+
+## Key Highlights
+
+- Fully Dockerized backend + database
+- Automatic SQL migrations on startup
+- Persistent PostgreSQL storage using Docker volumes
+- Clean modular backend architecture (services, repositories, handlers)
+- Production-ready environment configuration
+
+## Prerequisites
+
+- **Node.js** 20+ and npm (for frontend)
+- **Go** 1.22+ (for backend)
+- **Docker** (for full-stack with PostgreSQL)
+
+## Environment Setup
+
+### Backend `.env` Setup
+
+Copy the example env file and fill in your values:
+
+```bash
+cp server/.env.example server/.env
+```
+
+Then edit `server/.env` and set `DATABASE_URL`, `JWT_SECRET`, and other required values.  
+See `server/.env.example` for reference.
+
+### Frontend `.env.local` Setup
+
+Copy the example env file:
+
+```bash
+cp client/.env.example client/.env.local
+```
+
+Then edit `client/.env.local` and set `NEXT_PUBLIC_API_BASE_URL` (default: `http://localhost:8080/api/v1`).  
+See `client/.env.example` for reference.
+
+## How to Run (Docker)
+
+This starts **PostgreSQL + API** using `docker-compose.yml`:
+
+```bash
+docker-compose up --build
+```
+
+Backend API will be available at `http://localhost:8080/api/v1`.
+
+## How to Run (Local)
+
+### 1) Start Postgres
+
+If you are not using Docker for the backend, ensure Postgres is running locally and the `DATABASE_URL` in `server/.env` points to it.
+
+### 2) Start Backend
 
 ```bash
 cd server
-cp .env.example .env
-# Fill in DATABASE_URL, JWT_SECRET, and optional REDIS_URL / AI keys
 go run ./cmd/api
 ```
 
-### Frontend
+### 3) Start Frontend
 
 ```bash
 cd client
-cp .env.example .env.local
-# Set NEXT_PUBLIC_API_URL to backend base URL
 npm install
 npm run dev
 ```
 
-## Environment Variables
+## API Base URL
 
-See `server/.env.example` for backend config.  
-Frontend requires `NEXT_PUBLIC_API_URL` pointing to the running API.
+- Backend default: `http://localhost:8080/api/v1`
+- Frontend env: set `NEXT_PUBLIC_API_BASE_URL` to the API base URL
 
-## Database Migrations
+## Example Workflow
 
-Run in order from `server/internal/db/migrations/`:
+1. **Register** a requester or agent account
+2. **Login** to receive a JWT token
+3. **Create a ticket** with title, description, category, and priority
+4. **Track status** and SLA updates on the dashboard
 
-1. `001_init.sql`
-2. `002_migrate.sql`
-3. `003_migrate.sql`
-4. `004_ai_problem_management.sql`
